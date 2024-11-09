@@ -1,0 +1,28 @@
+# Ignore PyCharm project files
+.idea/
+
+# Ignore virtual environment
+venv/
+
+# Ignore compiled bytecode
+__pycache__/
+*.py[cod]
+
+# Ignore pytest cache
+.pytest_cache/
+
+# Ignore test results
+test-results/
+
+# Ignore temporary files
+*.tmp
+*.log
+*.bak
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore additional tools or temporary files
+*.swp
+*.swo
