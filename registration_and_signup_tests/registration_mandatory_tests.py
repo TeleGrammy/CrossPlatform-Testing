@@ -3,16 +3,17 @@ import unittest
 from utils.scrolling import scroll_until_element_found
 from selenium.webdriver.common.by import By
 from enums.xpaths import XPaths
+from enums.connect import Connect
 
 class RegistrationMandatoryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         capabilities = {
-            "platformName": 'Android',
-            "deviceName": '146ce6c8',
-            "app": r'C:\Users\20115\Downloads\app-release.apk'
+            "platformName": Connect.PLATFORM_NAME.value,
+            "deviceName": Connect.DEVICE_NAME_TABLET.value,
+            "app": Connect.APP.value
         }
-        cls.driver = webdriver.Remote('http://127.0.0.1:4723/wd/hub', capabilities)
+        cls.driver = webdriver.Remote(Connect.COMMAND_EXE.value, capabilities)
         cls.driver.implicitly_wait(50)
 
     def test_mandatory_fields_presence(self):
@@ -23,7 +24,7 @@ class RegistrationMandatoryTests(unittest.TestCase):
         self.assertTrue(self.check_field_present(XPaths.PHONE_FIELD.value), "Phone field is missing.")
         self.assertTrue(self.check_field_present(XPaths.PASSWORD_FIELD.value), "Password field is missing.")
         self.assertTrue(self.check_field_present(XPaths.CONFIRM_PASSWORD_FIELD.value), "Confirm Password field is missing.")
-        self.assertTrue(self.check_field_present('/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.widget.ScrollView/android.view.View[1]/android.webkit.WebView'), "Not Robot field is missing.")
+        self.assertTrue(self.check_field_present(XPaths.CAPATCHA_CHECK.value), "Not Robot field is missing.")
         self.assertTrue(self.check_field_present(XPaths.SIGNUP_BUTTON.value), "Sign Up button is missing.")
 
     def test_clear_instructions_present(self):
@@ -120,7 +121,7 @@ class RegistrationMandatoryTests(unittest.TestCase):
         # This function is used to clear all fields in registration form
         signup_form_xpath = [XPaths.USERNAME_FIELD,  XPaths.EMAIL_FIELD, XPaths.PHONE_FIELD, XPaths.PASSWORD_FIELD, XPaths.CONFIRM_PASSWORD_FIELD]
         for xpath in signup_form_xpath:
-            scroll_until_element_found(self.driver, By.XPATH,  xpath.value)
+            # scroll_until_element_found(self.driver, By.XPATH,  xpath.value)
             self.driver.find_element_by_xpath(xpath.value).clear()
         self.driver.hide_keyboard()
 
