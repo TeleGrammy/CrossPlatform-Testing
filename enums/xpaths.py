@@ -12,6 +12,8 @@ class XPaths(Enum):
     ERROR_MESSAGE_EMAIL  = '//android.view.View[@content-desc="Email is required"]'
     ERROR_MESSAGE_PASSWORD = '//android.view.View[@content-desc="Password must be at least 8 characters"]'
     ERROR_MESSAGE_PHONE = '//android.view.View[@content-desc="Phone number is required"]'
+    ERROR_MESSAGE_INVALID_EMAIL = '//android.view.View[@content-desc="Enter a valid email"]'
+    ERROR_PASSWORD_DO_NOT_MATCH = '	//android.view.View[@content-desc="Passwords do not match"]'
     REGISTER_INSTRUCTION1 = '//android.view.View[@content-desc="Already have an account? "]'
     REGISTER_INSTRUCTION2 = '//android.widget.Button[@content-desc="Login"]'
     CAPATCHA_CHECK = '/hierarchy/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.widget.ScrollView/android.view.View[1]/android.webkit.WebView'
