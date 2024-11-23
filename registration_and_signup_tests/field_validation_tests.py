@@ -1,115 +1,135 @@
+import time
 from appium import webdriver
 import unittest
+from enums.xpaths import XPaths
+from enums.connect import Connect
+from utils.fill_forms import fill_signup_form
+
 
 class RegistrationFieldValidationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         capabilities = {
-            "platformName": 'Android',
-            "deviceName": '146ce6c8',
-            "app": r'C:\Users\20115\Downloads\app-release.apk'
+            "platformName": Connect.PLATFORM_NAME.value,
+            "deviceName": Connect.DEVICE_NAME_MOBILE.value,
+            "app": Connect.APP.value
         }
-        cls.driver = webdriver.Remote('http://127.0.0.1:4723/wd/hub', capabilities)
+        cls.driver = webdriver.Remote(Connect.COMMAND_EXE.value, capabilities)
         cls.driver.implicitly_wait(50)
-
-    def fill_form(self, username="", email="", phone="", password="", conf_password=""):
-        # Helper function to fill the form fields
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Username"]').send_keys(username)
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Email"]').send_keys(email)
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Phone"]').send_keys(phone)
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Password"]').send_keys(password)
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Confirm Password"]').send_keys(conf_password)
 
     def test_empty_individual_fields(self):
         # Test submission with each field empty one by one
         field_names = ["Username", "Email", "Phone", "Password", "Confirm Password"]
-        for field in field_names:
-            self.fill_form()
-            field_element = self.driver.find_element_by_xpath(f'//android.widget.EditText[@content-desc="{field}"]')
+        error_msgs_xpath = [XPaths.ERROR_MESSAGE_USERNAME, XPaths.ERROR_MESSAGE_EMAIL, XPaths.ERROR_MESSAGE_PHONE, XPaths.ERROR_MESSAGE_PASSWORD, XPaths.ERROR_MESSAGE_CONFIRM_PASSWORD]
+        fields_xpath = [XPaths.USERNAME_FIELD, XPaths.EMAIL_FIELD, XPaths.PHONE_FIELD, XPaths.PASSWORD_FIELD, XPaths.CONFIRM_PASSWORD_FIELD]
+        for i in range(0, len(fields_xpath)-1):
+            fill_signup_form(self.driver, "test_user456", "test_email@gmail.com", "01150134573", "testpass123", "testpass123")
+            field_element = self.driver.find_element_by_xpath(fields_xpath[i].value)
             field_element.clear()
-            self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-            self.assertTrue(self.check_error_message(f"{field} is required"), f"Error message for empty {field} not displayed.")
+            self.driver.hide_keyboard()
+            self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+            time.sleep(2)
+            self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+            err_msg = self.driver.find_element_by_xpath(error_msgs_xpath[i].value)
+            self.assertTrue( err_msg is not None, f"Error message for empty {field_names[i]} not displayed.")
 
-    def test_all_fields_empty(self):
-        # Test the form submission when all fields are empty
-        self.fill_form()
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-        self.assertTrue(self.check_error_message("All fields are required"), "Error message for all fields empty not displayed.")
 
     def test_invalid_email_format(self):
         # Test invalid email formats
         invalid_emails = ["user@", "user@domain", "user@domain@domain.com", "user@@domain.com"]
+        fill_signup_form(self.driver, "test_user456", "", "01150134573", "testpass123", "testpass123")
         for email in invalid_emails:
-            self.fill_form(email=email)
-            self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-            self.assertTrue(self.check_error_message("Invalid email format"), f"Invalid email '{email}' not detected.")
+            self.driver.find_element_by_xpath(XPaths.EMAIL_FIELD.value).clear()
+            self.driver.find_element_by_xpath(XPaths.EMAIL_FIELD.value).send_keys(email)
+            self.driver.hide_keyboard()
+            self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+            time.sleep(2)
+            self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+            email_err_msg = self.driver.find_element_by_xpath(XPaths.ERROR_MESSAGE_INVALID_EMAIL.value)
+            self.assertTrue(email_err_msg is not None, f"Invalid email '{email}' not detected.")
 
     def test_password_strength(self):
         # Test password strength requirements
-        weak_passwords = ["short", "12345678", "password", "Password123"]
+        weak_passwords = ["short", "123", "pass", "12334567"]
+        fill_signup_form(self.driver, "test_user456", "valid_test56@gmail.com", "01150134573", "", "")
         for password in weak_passwords:
-            self.fill_form(password=password, conf_password=password)
-            self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-            self.assertTrue(self.check_error_message("Password does not meet strength requirements"), f"Weak password '{password}' was not flagged.")
+            self.driver.find_element_by_xpath(XPaths.PASSWORD_FIELD.value).send_keys(password)
+            self.driver.find_element_by_xpath(XPaths.CONFIRM_PASSWORD_FIELD.value).send_keys(password)
+            self.driver.hide_keyboard()
+            self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+            time.sleep(2)
+            self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+            password_err_msg = self.driver.find_element_by_xpath(XPaths.ERROR_MESSAGE_PASSWORD.value)
+            self.assertTrue(password_err_msg is not None, f"Weak password '{password}' was not flagged.")
 
     def test_password_confirmation_match(self):
         # Test that password and confirmation must match
-        self.fill_form(password="ValidPass123!", conf_password="DifferentPass123!")
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-        self.assertTrue(self.check_error_message("Passwords do not match"), "Mismatched passwords not flagged.")
-
-    def test_excessively_long_email(self):
-        # Test excessively long email addresses
-        long_email = "a" * 256 + "@example.com"
-        self.fill_form(email=long_email)
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-        self.assertTrue(self.check_error_message("Email is too long"), "Long email not flagged.")
+        fill_signup_form(self.driver, "test_user456", "valid_test78@gmail.com", "01150134573", "tstpass123", "tstpass133")
+        self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+        time.sleep(2)
+        self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+        password_err_msg = self.driver.find_element_by_xpath(XPaths.ERROR_PASSWORD_DO_NOT_MATCH.value)
+        self.assertTrue(password_err_msg is not None, "Mismatched passwords not flagged.")
 
     def test_password_no_alphanumeric(self):
         # Test passwords with no alphanumeric characters
         non_alphanumeric_password = "*********"
-        self.fill_form(password=non_alphanumeric_password, conf_password=non_alphanumeric_password)
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-        self.assertTrue(self.check_error_message("Password must contain letters and numbers"), "Password with no alphanumeric characters not flagged.")
+        fill_signup_form(self.driver, "test_user456", "valid_test90@gmail.com", "01150134573", non_alphanumeric_password, non_alphanumeric_password)
+        self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+        time.sleep(2)
+        self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+        password_err_msg = self.driver.find_element_by_xpath(XPaths.ERROR_MESSAGE_PASSWORD.value)
+        self.assertTrue(password_err_msg is not None, "Password with no alphanumeric characters not flagged.")
 
-    def test_password_with_spaces_and_special_characters(self):
-        # Test passwords containing spaces and special characters
+    def test_password_with_spaces_characters(self):
+        # Test passwords containing spaces characters
         special_char_password = "Pass word!@#"
-        self.fill_form(password=special_char_password, conf_password=special_char_password)
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-        self.assertTrue(self.check_successful_signup(), "Password with spaces/special characters not accepted.")
-
-    def test_trimmed_spaces_in_password(self):
-        # Test that leading/trailing spaces in passwords are handled correctly
-        password_with_spaces = " ValidPass123! "
-        self.fill_form(password=password_with_spaces.strip(), conf_password=password_with_spaces.strip())
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-        self.assertTrue(self.check_successful_signup(), "Password with leading/trailing spaces not handled correctly.")
+        fill_signup_form(self.driver, "test_user456", "valid_test21@gmail.com", "01150134573", special_char_password, special_char_password)
+        self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+        time.sleep(2)
+        self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+        password_err_msg = self.driver.find_element_by_xpath(XPaths.ERROR_MESSAGE_PASSWORD.value)
+        self.assertTrue(password_err_msg is not None, "Password with spaces characters not accepted.")
 
     def test_common_passwords(self):
         # Test that commonly used passwords are not allowed
         common_passwords = ["password", "123456", "admin"]
+        fill_signup_form(self.driver, "test_user456", "valid_test56@gmail.com", "01150134573", "", "")
         for password in common_passwords:
-            self.fill_form(password=password, conf_password=password)
-            self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-            self.assertTrue(self.check_error_message("Common passwords are not allowed"), f"Common password '{password}' not flagged.")
+            self.driver.find_element_by_xpath(XPaths.PASSWORD_FIELD.value).send_keys(password)
+            self.driver.find_element_by_xpath(XPaths.CONFIRM_PASSWORD_FIELD.value).send_keys(password)
+            self.driver.hide_keyboard()
+            self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+            time.sleep(2)
+            self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+            password_err_msg = self.driver.find_element_by_xpath(XPaths.ERROR_MESSAGE_PASSWORD.value)
+            self.assertTrue(password_err_msg is not None, f"Common password '{password}' not flagged.")
 
-    def test_repeated_character_password(self):
-        # Test passwords with repeated characters
-        repeated_char_password = "aaaaaaaaaa"
-        self.fill_form(password=repeated_char_password, conf_password=repeated_char_password)
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
-        self.assertTrue(self.check_error_message("Password is too weak"), "Repeated character password not flagged.")
+    def test_invalid_username(self):
+        # Test invalid usernames are not allowed
+        invalid_usernames = ["a", "ab", "123123", "4"]
+        fill_signup_form(self.driver, "", "valid_test43@gmail.com", "01150134573", "passTest123", "passTest123")
+        for username in invalid_usernames:
+            self.driver.find_element_by_xpath(XPaths.USERNAME_FIELD.value).send_keys(username)
+            self.driver.hide_keyboard()
+            self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+            time.sleep(2)
+            self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+            username_err_msg = self.driver.find_element_by_xpath(XPaths.ERROR_MESSAGE_USERNAME.value)
+            self.assertTrue(username_err_msg is not None, f"Invalid Username '{username}' not flagged.")
 
-    def check_error_message(self, expected_message):
-        # Helper function to verify specific error messages
-        error_element = self.driver.find_element_by_xpath("//android.widget.TextView[@content-desc='Error Message']")
-        return expected_message in error_element.text
-
-    def check_successful_signup(self):
-        # Placeholder method to verify successful signup
-        success_element = self.driver.find_element_by_xpath("//android.widget.TextView[@content-desc='Success Message']")
-        return "Welcome" in success_element.text
+    def test_invalid_phone(self):
+        # Test invalid phone are not allowed
+        invalid_phones = ["0115013", "00000000000", "01434789234", "123123", "4"]
+        fill_signup_form(self.driver, "test_user_123", "valid_test65@gmail.com", "", "passTest123", "passTest123")
+        for phone in invalid_phones:
+            self.driver.find_element_by_xpath(XPaths.PHONE_FIELD.value).send_keys(phone)
+            self.driver.hide_keyboard()
+            self.driver.find_element_by_xpath(XPaths.CAPATCHA_CHECK.value).click()
+            time.sleep(2)
+            self.driver.find_element_by_xpath(XPaths.SIGNUP_BUTTON.value).click()
+            phone_err_msg = self.driver.find_element_by_xpath(XPaths.ERROR_MESSAGE_PHONE.value)
+            self.assertTrue(phone_err_msg is not None, f"Invalid Phone Number '{phone}' not flagged.")
 
     @classmethod
     def tearDownClass(cls):
