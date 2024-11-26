@@ -26,3 +26,5 @@ Thumbs.db
 # Ignore additional tools or temporary files
 *.swp
 *.swo
+
+.env
