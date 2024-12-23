@@ -1,18 +1,22 @@
 import unittest
 from appium import webdriver
+from selenium.webdriver.common.by import By
+from enums.connect import Connect
+from appium.options.android import UiAutomator2Options
+
 
 
 class ThirdPartyAuthenticationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Set up Appium driver
-        capabilities = {
-            "platformName": 'Android',
-            "deviceName": '146ce6c8',
-            "app": r'C:\Users\20115\Downloads\app-release.apk'
-        }
-        cls.driver = webdriver.Remote('http://127.0.0.1:4723/wd/hub', capabilities)
+        options = UiAutomator2Options().load_capabilities({
+            'platformName': Connect.PLATFORM_NAME.value,
+            'deviceName': Connect.EMULATOR_NAME.value,
+            'app': Connect.APP.value,
+        })
+        cls.driver = webdriver.Remote(command_executor=Connect.COMMAND_EXE.value, options=options)
         cls.driver.implicitly_wait(50)
+
 
     def test_third_party_authentication_via_google(self):
         # Simulate user registration through Google
@@ -56,17 +60,17 @@ class ThirdPartyAuthenticationTests(unittest.TestCase):
 
     def register_third_party_user(self, username, email, auth_provider):
         # Helper function to register a user through third-party authentication
-        self.driver.find_element_by_xpath(f'//android.widget.Button[@content-desc="{auth_provider}"]').click()
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Username"]').send_keys(username)
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Email"]').send_keys(email)
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Sign Up"]').click()
+        self.driver.find_element(By.XPATH,f'//android.widget.Button[@content-desc="{auth_provider}"]').click()
+        self.driver.find_element(By.XPATH,'//android.widget.EditText[@content-desc="Username"]').send_keys(username)
+        self.driver.find_element(By.XPATH,'//android.widget.EditText[@content-desc="Email"]').send_keys(email)
+        self.driver.find_element(By.XPATH,'//android.widget.Button[@content-desc="Sign Up"]').click()
 
     def link_account_to_google(self, username, email):
         # Simulate linking an account to Google
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Link Google"]').click()
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Username"]').send_keys(username)
-        self.driver.find_element_by_xpath('//android.widget.EditText[@content-desc="Email"]').send_keys(email)
-        self.driver.find_element_by_xpath('//android.widget.Button[@content-desc="Link Account"]').click()
+        self.driver.find_element(By.XPATH,'//android.widget.Button[@content-desc="Link Google"]').click()
+        self.driver.find_element(By.XPATH,'//android.widget.EditText[@content-desc="Username"]').send_keys(username)
+        self.driver.find_element(By.XPATH,'//android.widget.EditText[@content-desc="Email"]').send_keys(email)
+        self.driver.find_element(By.XPATH,'//android.widget.Button[@content-desc="Link Account"]').click()
 
     def simulate_third_party_failure(self, auth_provider):
         # Simulate third-party authentication failure (e.g., service down)
@@ -74,19 +78,19 @@ class ThirdPartyAuthenticationTests(unittest.TestCase):
 
     def check_success_message(self, expected_message):
         # Helper function to verify success messages
-        success_element = self.driver.find_element_by_xpath(
+        success_element = self.driver.find_element(By.XPATH,
             "//android.widget.TextView[@content-desc='Success Message']")
         return expected_message in success_element.text
 
     def check_error_message(self, expected_message):
         # Helper function to verify error messages
-        error_element = self.driver.find_element_by_xpath("//android.widget.TextView[@content-desc='Error Message']")
+        error_element = self.driver.find_element(By.XPATH,"//android.widget.TextView[@content-desc='Error Message']")
         return expected_message in error_element.text
 
     def check_privacy_compliance(self, auth_provider):
         # Simulate privacy compliance check (e.g., GDPR)
         # This can involve checking for specific UI elements or verifying that consent information is displayed
-        consent_message = self.driver.find_element_by_xpath(
+        consent_message = self.driver.find_element(By.XPATH,
             "//android.widget.TextView[@content-desc='Privacy Consent']")
         return f"{auth_provider} privacy consent" in consent_message.text
 
